@@ -5,7 +5,7 @@ import java.time.Duration
 import com.github.reugn.memento.models.{Message, RecordContext}
 import com.github.reugn.memento.state.DelayRegulator
 import com.github.reugn.memento.utils
-import com.github.reugn.memento.utils.Serde
+import com.github.reugn.memento.utils.{Serde, StateStoreAux, StateStoreProxy}
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.LazyLogging
 import javax.inject.Inject
@@ -17,10 +17,11 @@ import scala.language.postfixOps
 import scala.util.Try
 
 class SuspendingProcessor @Inject()(config: Config,
+                                    proxy: StateStoreProxy,
                                     regulator: DelayRegulator)
-  extends AbstractProcessor[String, String] with LazyLogging {
+  extends AbstractProcessor[String, String] with StateStoreAux with LazyLogging {
 
-  private var store: KeyValueStore[Long, Array[Byte]] = _
+  protected var store: KeyValueStore[Long, Array[Byte]] = _
 
   private val intervalMillis = Try {
     config.getLong("emit_interval_millis")
@@ -30,18 +31,21 @@ class SuspendingProcessor @Inject()(config: Config,
     super.init(context)
     // init a state store
     store = context.getStateStore(utils.STATE_STORE_NAME).asInstanceOf[KeyValueStore[Long, Array[Byte]]]
+    proxy.setStore(store)
 
     // schedule an emit ready-to-go messages process
     this.context.schedule(Duration.ofMillis(intervalMillis), PunctuationType.WALL_CLOCK_TIME, timestamp => {
       if (regulator.shouldEmit()) {
-        val it = store.range(0, timestamp)
-        it forEachRemaining { entry =>
-          val m = Serde.deserialize(entry.value).asInstanceOf[Message]
-          this.context.asInstanceOf[AbstractProcessorContext].setRecordContext(m.recordContext.toProcessorRecordContext)
-          this.context.forward(m.key, m.value)
-          store.delete(entry.key)
+        store.synchronized {
+          val it = store.range(0, timestamp)
+          it forEachRemaining { entry =>
+            val m = Serde.deserialize(entry.value).asInstanceOf[Message]
+            this.context.asInstanceOf[AbstractProcessorContext].setRecordContext(m.recordContext.toProcessorRecordContext)
+            this.context.forward(m.key, m.value)
+            store.delete(entry.key)
+          }
+          it close()
         }
-        it close()
       }
     })
   }
@@ -49,7 +53,7 @@ class SuspendingProcessor @Inject()(config: Config,
   override def process(key: String, value: String): Unit = {
     val message = Message(key, value,
       RecordContext.fromProcessorRecordContext(context.asInstanceOf[AbstractProcessorContext].recordContext()))
-    store.put(getEmitTimestamp, Serde.serialize(message))
+    store.synchronized(store.put(nextAvailableKey(getEmitTimestamp), Serde.serialize(message)))
     context.commit()
   }
 

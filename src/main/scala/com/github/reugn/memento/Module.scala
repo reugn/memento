@@ -4,7 +4,8 @@ import java.util
 
 import akka.actor.ActorSystem
 import com.github.reugn.memento.state.{DelayRegulator, LocalRegulator}
-import com.google.inject.{AbstractModule, TypeLiteral}
+import com.github.reugn.memento.utils.StateStoreProxy
+import com.google.inject.{AbstractModule, Scopes, TypeLiteral}
 import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.kafka.common.serialization.Serdes
 import org.apache.kafka.streams.state.{KeyValueStore, StoreBuilder, Stores}
@@ -18,6 +19,7 @@ class Module extends AbstractModule {
     bind(classOf[Config]).toInstance(ConfigFactory.load().resolve())
     bind(classOf[ExecutionContext]).toInstance(scala.concurrent.ExecutionContext.global)
     bind(classOf[DelayRegulator]).to(classOf[LocalRegulator])
+    bind(classOf[StateStoreProxy]).in(Scopes.SINGLETON)
     bind(new TypeLiteral[StoreBuilder[KeyValueStore[java.lang.Long, Array[Byte]]]] {}).toInstance(buildStore())
   }
 

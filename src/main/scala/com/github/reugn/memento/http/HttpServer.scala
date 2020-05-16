@@ -5,6 +5,9 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.stream.Materializer
+import com.github.reugn.memento.models.{HttpMessage, Message, RawRecordHeader, RecordContext}
+import com.github.reugn.memento.utils
+import com.github.reugn.memento.utils.{Serde, StateStoreProxy}
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.LazyLogging
 import javax.inject.{Inject, Singleton}
@@ -14,7 +17,8 @@ import scala.util.{Failure, Success}
 
 @Singleton
 final class HttpServer @Inject()(config: Config,
-                                 implicit val actorSystem: ActorSystem) extends LazyLogging {
+                                 proxy: StateStoreProxy,
+                                 implicit val actorSystem: ActorSystem) extends JsonSupport with LazyLogging {
 
   private implicit val materializer: Materializer = Materializer.createMaterializer(actorSystem)
   private implicit val ec: ExecutionContextExecutor = actorSystem.dispatcher
@@ -46,6 +50,25 @@ final class HttpServer @Inject()(config: Config,
         get {
           logger.trace("/ready route call")
           complete("Ok")
+        }
+      } ~
+      path("store") {
+        post {
+          entity(as[HttpMessage]) { msg =>
+            logger.trace("/store route call")
+            val ctx = RecordContext(
+              msg.ts,
+              0,
+              "http",
+              0,
+              Array(
+                RawRecordHeader(utils.ORIGIN_TOPIC_HEADER, msg.origin.getBytes),
+                RawRecordHeader(utils.TIMESTAMP_HEADER, String.valueOf(msg.ts).getBytes)
+              )
+            )
+            proxy.put(msg.ts, Serde.serialize(Message(msg.key.orNull, msg.value, ctx)))
+            complete("Message successfully settled")
+          }
         }
       }
 }
