@@ -10,7 +10,7 @@ val kafkaVersion = "2.5.0"
 
 libraryDependencies ++= Seq(
   "com.typesafe" % "config" % "1.4.0",
-  "com.typesafe.scala-logging" %% "scala-logging" % "3.8.0",
+  "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2",
   "javax.inject" % "javax.inject" % "1",
   "com.google.inject" % "guice" % "4.2.3",
   "com.typesafe.akka" %% "akka-actor" % "2.6.5",
