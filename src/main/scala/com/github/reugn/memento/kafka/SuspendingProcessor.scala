@@ -10,7 +10,7 @@ import com.typesafe.config.Config
 import com.typesafe.scalalogging.LazyLogging
 import javax.inject.Inject
 import org.apache.kafka.streams.processor.internals.AbstractProcessorContext
-import org.apache.kafka.streams.processor.{AbstractProcessor, ProcessorContext, PunctuationType}
+import org.apache.kafka.streams.processor.{AbstractProcessor, ProcessorContext, PunctuationType, Punctuator}
 import org.apache.kafka.streams.state.KeyValueStore
 
 import scala.language.postfixOps
@@ -34,7 +34,7 @@ class SuspendingProcessor @Inject()(config: Config,
     proxy.setStore(store)
 
     // schedule an emit ready-to-go messages process
-    this.context.schedule(Duration.ofMillis(intervalMillis), PunctuationType.WALL_CLOCK_TIME, timestamp => {
+    this.context.schedule(Duration.ofMillis(intervalMillis), PunctuationType.WALL_CLOCK_TIME, (timestamp => {
       if (regulator.shouldEmit()) {
         store.synchronized {
           val it = store.range(0, timestamp)
@@ -44,10 +44,10 @@ class SuspendingProcessor @Inject()(config: Config,
             this.context.forward(m.key, m.value)
             store.delete(entry.key)
           }
-          it close()
+          it.close()
         }
       }
-    })
+    }): Punctuator)
   }
 
   override def process(key: String, value: String): Unit = {
