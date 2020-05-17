@@ -1,4 +1,6 @@
 # memento
+[![Build Status](https://travis-ci.com/reugn/memento.svg?branch=master)](https://travis-ci.com/reugn/memento)
+
 With [Kafka](https://kafka.apache.org/), we can't keep on retry a message without blocking the whole partition. But what if we would like
 to delay/reprocess the current message and go ahead.
 Kafka lacks a delayed message consumption mechanism as well.
@@ -7,11 +9,23 @@ What if we could hack the Kafka Streams and turn the flow to a delayed Kafka pro
 ## Introduction
 `memento` is a Kafka Streams application that could come in handy when you want to:
 * reprocess particular Kafka messages without blocking the partition
-* submit a suspended Kafka message to the target topic
+* submit a delayed Kafka message
 
 The message should contain the following headers:
 * `origin` - a target topic name
 * `ts` - a timestamp to emit the message
+
+Delayed message submission via HTTP is also available.
+```
+curl --location --request POST 'localhost:8080/store' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+"key": "key1",
+"value": "abcd",
+"origin": "test2",
+"ts": 1588338000000
+}'
+```
 
 The project utilizes the `KeyValueStore` as a messages storage. Inject your own implementation using `Guice` module.  
 More persistent KeyValueStores:
