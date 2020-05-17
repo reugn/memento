@@ -5,6 +5,7 @@ import java.util.Properties
 
 import com.github.reugn.memento.kafka.{EmitTopicNameExtractor, SuspendingProcessor}
 import com.github.reugn.memento.state.LocalRegulator
+import com.github.reugn.memento.utils.StateStoreProxy
 import com.typesafe.config.ConfigFactory
 import org.apache.kafka.common.header.internals.RecordHeaders
 import org.apache.kafka.common.serialization._
@@ -34,7 +35,8 @@ class MementoConsumerTest extends AnyFlatSpec with Matchers with BeforeAndAfter 
 
   before {
     val config = ConfigFactory.empty()
-    val collectSupplier: ProcessorSupplier[String, String] = () => new SuspendingProcessor(config, new LocalRegulator)
+    val collectSupplier: ProcessorSupplier[String, String] = () => new SuspendingProcessor(config,
+      new StateStoreProxy, new LocalRegulator)
     val storeBuilder = Stores.keyValueStoreBuilder(Stores.inMemoryKeyValueStore(utils.STATE_STORE_NAME),
       Serdes.Long, Serdes.ByteArray)
     val topology = new Topology

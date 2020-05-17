@@ -10,12 +10,13 @@ val kafkaVersion = "2.5.0"
 
 libraryDependencies ++= Seq(
   "com.typesafe" % "config" % "1.4.0",
-  "com.typesafe.scala-logging" %% "scala-logging" % "3.8.0",
+  "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2",
   "javax.inject" % "javax.inject" % "1",
   "com.google.inject" % "guice" % "4.2.3",
   "com.typesafe.akka" %% "akka-actor" % "2.6.5",
   "com.typesafe.akka" %% "akka-stream" % "2.6.5",
-  "com.typesafe.akka" %% "akka-http" % "10.1.11",
+  "com.typesafe.akka" %% "akka-http" % "10.1.12",
+  "com.typesafe.akka" %% "akka-http-spray-json" % "10.1.12",
   "org.apache.kafka" % "kafka-clients" % kafkaVersion,
   "org.apache.kafka" %% "kafka" % kafkaVersion,
   "org.apache.kafka" % "kafka-streams" % kafkaVersion,
