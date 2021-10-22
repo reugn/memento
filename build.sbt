@@ -3,27 +3,29 @@ import sbtassembly.AssemblyPlugin.autoImport.assemblyMergeStrategy
 
 name := "memento"
 organization := "com.github.reugn"
-scalaVersion := "2.12.11"
-crossScalaVersions := Seq(scalaVersion.value, "2.13.2")
+scalaVersion := "2.12.15"
+crossScalaVersions := Seq(scalaVersion.value, "2.13.6")
 
-val kafkaVersion = "2.5.0"
+val kafkaVersion = "2.8.1"
+val akkaVersion = "2.6.15"
+val akkaHttpVersion = "10.2.6"
 
 libraryDependencies ++= Seq(
-  "com.typesafe" % "config" % "1.4.0",
-  "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2",
+  "com.typesafe" % "config" % "1.4.1",
+  "com.typesafe.scala-logging" %% "scala-logging" % "3.9.4",
   "javax.inject" % "javax.inject" % "1",
-  "com.google.inject" % "guice" % "4.2.3",
-  "com.typesafe.akka" %% "akka-actor" % "2.6.5",
-  "com.typesafe.akka" %% "akka-stream" % "2.6.5",
-  "com.typesafe.akka" %% "akka-http" % "10.1.12",
-  "com.typesafe.akka" %% "akka-http-spray-json" % "10.1.12",
+  "com.google.inject" % "guice" % "5.0.1",
+  "com.typesafe.akka" %% "akka-actor" % akkaVersion,
+  "com.typesafe.akka" %% "akka-stream" % akkaVersion,
+  "com.typesafe.akka" %% "akka-http" % akkaHttpVersion,
+  "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion,
   "org.apache.kafka" % "kafka-clients" % kafkaVersion,
   "org.apache.kafka" %% "kafka" % kafkaVersion,
   "org.apache.kafka" % "kafka-streams" % kafkaVersion,
   "org.apache.kafka" % "kafka-streams-test-utils" % kafkaVersion,
-  "net.logstash.logback" % "logstash-logback-encoder" % "3.5",
-  "ch.qos.logback" % "logback-classic" % "1.2.3",
-  "org.scalatest" %% "scalatest" % "3.1.2" % Test
+  "net.logstash.logback" % "logstash-logback-encoder" % "6.6",
+  "ch.qos.logback" % "logback-classic" % "1.2.6",
+  "org.scalatest" %% "scalatest" % "3.2.10" % Test
 )
 
 excludeDependencies ++= Seq(
@@ -40,18 +42,18 @@ scalacOptions := Seq(
   "-Xlint:-missing-interpolator"
 )
 
-mainClass in(Compile, run) := Some("com.github.reugn.memento.MementoApp")
+Compile / run / mainClass := Some("com.github.reugn.memento.MementoApp")
 
 licenses += ("Apache-2.0", url("https://www.apache.org/licenses/LICENSE-2.0.html"))
 
-assemblyOutputPath in assembly := baseDirectory.value /
+assembly / assemblyOutputPath := baseDirectory.value /
   "assembly" / (name.value + "-" + version.value + ".jar")
 
-assemblyMergeStrategy in assembly := {
-  case PathList("META-INF", xs@_*) => MergeStrategy.discard
+assembly / assemblyMergeStrategy := {
+  case PathList("META-INF", _*) => MergeStrategy.discard
   case PathList("reference.conf") => MergeStrategy.concat
   case _ => MergeStrategy.first
 }
 
-unmanagedResourceDirectories in Compile += baseDirectory.value / "conf"
-cancelable in Global := true
+Compile / unmanagedResourceDirectories += baseDirectory.value / "conf"
+Global / cancelable := true
