@@ -2,7 +2,7 @@ package com.github.reugn.memento
 
 package object utils {
 
-  // kafka message required headers names
+  // Required Kafka message header names
   val ORIGIN_TOPIC_HEADER = "origin"
   val TIMESTAMP_HEADER = "ts"
 
