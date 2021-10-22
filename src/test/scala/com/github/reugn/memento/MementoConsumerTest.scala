@@ -1,8 +1,5 @@
 package com.github.reugn.memento
 
-import java.time.Duration
-import java.util.Properties
-
 import com.github.reugn.memento.kafka.{EmitTopicNameExtractor, SuspendingProcessor}
 import com.github.reugn.memento.state.LocalRegulator
 import com.github.reugn.memento.utils.StateStoreProxy
@@ -10,12 +7,15 @@ import com.typesafe.config.ConfigFactory
 import org.apache.kafka.common.header.internals.RecordHeaders
 import org.apache.kafka.common.serialization._
 import org.apache.kafka.streams._
-import org.apache.kafka.streams.processor.ProcessorSupplier
+import org.apache.kafka.streams.processor.api.ProcessorSupplier
 import org.apache.kafka.streams.state.{KeyValueStore, Stores}
 import org.apache.kafka.streams.test.TestRecord
 import org.scalatest.BeforeAndAfter
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+
+import java.time.Duration
+import java.util.Properties
 
 class MementoConsumerTest extends AnyFlatSpec with Matchers with BeforeAndAfter {
 
@@ -35,8 +35,8 @@ class MementoConsumerTest extends AnyFlatSpec with Matchers with BeforeAndAfter 
 
   before {
     val config = ConfigFactory.empty()
-    val collectSupplier: ProcessorSupplier[String, String] = () => new SuspendingProcessor(config,
-      new StateStoreProxy, new LocalRegulator)
+    val collectSupplier: ProcessorSupplier[String, String, String, String] =
+      () => new SuspendingProcessor(config, new StateStoreProxy, new LocalRegulator)
     val storeBuilder = Stores.keyValueStoreBuilder(Stores.inMemoryKeyValueStore(utils.STATE_STORE_NAME),
       Serdes.Long, Serdes.ByteArray)
     val topology = new Topology
@@ -45,7 +45,7 @@ class MementoConsumerTest extends AnyFlatSpec with Matchers with BeforeAndAfter 
     topology.addStateStore(storeBuilder, "processor")
     topology.addSink("sink", new EmitTopicNameExtractor, "processor")
 
-    // setup test driver
+    // Set up test driver
     val props = new Properties
     props.setProperty(StreamsConfig.APPLICATION_ID_CONFIG, "storeTest")
     props.setProperty(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "host:9092")

@@ -1,21 +1,21 @@
 package com.github.reugn.memento.kafka
 
-import java.util.Properties
-
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.LazyLogging
-import javax.inject.Inject
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.common.serialization.Serdes
-import org.apache.kafka.streams.processor.ProcessorSupplier
+import org.apache.kafka.streams.errors.StreamsUncaughtExceptionHandler
+import org.apache.kafka.streams.processor.api.ProcessorSupplier
 import org.apache.kafka.streams.state.{KeyValueStore, StoreBuilder}
 import org.apache.kafka.streams.{KafkaStreams, StreamsConfig, Topology}
 
+import java.util.Properties
+import javax.inject.{Inject, Provider}
 import scala.concurrent.ExecutionContext
 
 class MementoConsumer @Inject()(
                                  config: Config,
-                                 processor: SuspendingProcessor,
+                                 processorProvider: Provider[SuspendingProcessor],
                                  storeBuilder: StoreBuilder[KeyValueStore[java.lang.Long, Array[Byte]]],
                                  implicit val ec: ExecutionContext
                                ) extends LazyLogging {
@@ -39,7 +39,7 @@ class MementoConsumer @Inject()(
   }
 
   protected val inputTopic: String = config.getString(s"kafka.consumer.topic")
-  protected val collectSupplier: ProcessorSupplier[String, String] = () => processor
+  protected val collectSupplier: ProcessorSupplier[String, String, String, String] = () => processorProvider.get()
 
   protected def createTopology(): KafkaStreams = {
     logger.info(s"Creating a topology for the topic $inputTopic")
@@ -54,10 +54,11 @@ class MementoConsumer @Inject()(
 
   def runFlow(): Unit = {
     val stream = createTopology()
-    stream.setUncaughtExceptionHandler((_: Thread, e: Throwable) => {
+    stream.setUncaughtExceptionHandler((e: Throwable) => {
       logger.error(s"Error in ${getClass.getSimpleName}", e)
       stream.close()
       runFlow()
+      StreamsUncaughtExceptionHandler.StreamThreadExceptionResponse.REPLACE_THREAD
     })
     logger.info(s"Starting ${getClass.getSimpleName} flow")
     stream.cleanUp()
