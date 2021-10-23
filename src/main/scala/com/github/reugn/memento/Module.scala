@@ -1,7 +1,5 @@
 package com.github.reugn.memento
 
-import java.util
-
 import akka.actor.ActorSystem
 import com.github.reugn.memento.state.{DelayRegulator, LocalRegulator}
 import com.github.reugn.memento.utils.StateStoreProxy
@@ -10,6 +8,7 @@ import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.kafka.common.serialization.Serdes
 import org.apache.kafka.streams.state.{KeyValueStore, StoreBuilder, Stores}
 
+import java.util
 import scala.concurrent.ExecutionContext
 
 class Module extends AbstractModule {
